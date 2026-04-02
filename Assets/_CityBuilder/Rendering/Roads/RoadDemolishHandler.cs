@@ -1,4 +1,4 @@
-﻿using CityBuilder.Core;
+using CityBuilder.Core;
 using CityBuilder.Tools;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -9,8 +9,10 @@ namespace CityBuilder.Rendering.Roads
     /// <summary>
     /// Demolishes road segments via direct raycast hit on the road mesh.
     /// Highlights the hovered segment while the bulldozer tool is active.
-    /// Attach to any GameObject in the scene.
-    /// Assign <see cref="BulldozerTool"/> and <see cref="RoadRenderer"/> in the Inspector.
+    ///
+    /// Both BulldozerTool and RoadRenderer are resolved automatically at runtime
+    /// via FindObjectOfType – no manual Inspector wiring required.
+    /// Optionally assign them in the Inspector to override the auto-resolve.
     /// </summary>
     public class RoadDemolishHandler : MonoBehaviour, IDemolishHandler
     {
@@ -21,21 +23,37 @@ namespace CityBuilder.Rendering.Roads
 
         private void Start()
         {
+            // Auto-resolve if not wired in the Inspector
+            if (bulldozerTool == null)
+                bulldozerTool = FindObjectOfType<BulldozerTool>();
+
+            if (roadRenderer == null)
+                roadRenderer = FindObjectOfType<RoadRenderer>();
+
             if (bulldozerTool == null)
             {
+                Debug.LogError("[RoadDemolishHandler] No BulldozerTool found in scene. " +
+                               "Add one or assign it in the Inspector.", this);
+                return;
+            }
+
+            if (roadRenderer == null)
+            {
+                Debug.LogError("[RoadDemolishHandler] No RoadRenderer found in scene. " +
+                               "Add one or assign it in the Inspector.", this);
                 return;
             }
 
             _camera = Camera.main;
             bulldozerTool.RegisterHandler(this);
+
+            Debug.Log("[RoadDemolishHandler] Registered with BulldozerTool.", this);
         }
 
         private void Update()
         {
-            if (!bulldozerTool || roadRenderer?.Registry == null)
-            {
+            if (bulldozerTool == null || roadRenderer?.Registry == null)
                 return;
-            }
 
             if (!bulldozerTool.IsActive)
             {
@@ -44,7 +62,7 @@ namespace CityBuilder.Rendering.Roads
             }
 
             Mouse ms = Mouse.current;
-            if (ms == null || !_camera)
+            if (ms == null || _camera == null)
             {
                 roadRenderer.Registry.ClearHighlight();
                 return;
@@ -64,25 +82,17 @@ namespace CityBuilder.Rendering.Roads
 
         private void OnDestroy()
         {
-            if (bulldozerTool != null)
-            {
-                bulldozerTool.UnregisterHandler(this);
-            }
-
+            bulldozerTool?.UnregisterHandler(this);
             roadRenderer?.Registry?.ClearHighlight();
         }
 
         public bool TryDemolish(RaycastHit hit, float gameTime)
         {
             if (roadRenderer?.Registry == null || GameServices.Instance == null)
-            {
                 return false;
-            }
 
             if (!roadRenderer.Registry.TryGetId(hit.collider.gameObject, out int segmentId))
-            {
                 return false;
-            }
 
             return GameServices.Instance.Roads.DemolishRoad(segmentId, gameTime);
         }
