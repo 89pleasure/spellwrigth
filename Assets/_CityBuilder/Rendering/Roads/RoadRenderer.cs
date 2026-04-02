@@ -54,7 +54,6 @@ namespace CityBuilder.Rendering.Roads
                 Debug.LogWarning("RoadRenderer: no materials assigned – roads will appear pink.", this);
             }
 
-            // Use the first material as the shared base for highlight tracking
             Material baseMaterial = roadMaterials.Length > 0
                 ? roadMaterials[0]
                 : new Material(Shader.Find("Hidden/InternalErrorShader")!);
@@ -65,7 +64,6 @@ namespace CityBuilder.Rendering.Roads
             bus.Subscribe<RoadBuiltEvent>(this);
             bus.Subscribe<RoadDemolishedEvent>(this);
 
-            // Visualize any segments that were built before this component started
             foreach (RoadSegment seg in GameServices.Instance.Roads.Graph.Segments.Values)
                 SpawnSegmentMesh(seg);
         }
@@ -79,11 +77,6 @@ namespace CityBuilder.Rendering.Roads
 
         public void Handle(RoadDemolishedEvent evt) => Registry?.Unregister(evt.SegmentId);
 
-        /// <summary>
-        /// Destroys and recreates the mesh for one segment.
-        /// Called by IntersectionRenderer after it updates TrimmedStartT/TrimmedEndT
-        /// so the new mesh reflects the correct clipped length.
-        /// </summary>
         public void RebuildSegment(int segmentId)
         {
             Registry?.Unregister(segmentId);
@@ -116,19 +109,25 @@ namespace CityBuilder.Rendering.Roads
         }
 
         /// <summary>
-        /// Creates a GameObject with MeshFilter, MeshRenderer, and MeshCollider
-        /// from the given mesh data. The collider lets the demolish tool raycast
-        /// against the actual road surface rather than an approximation.
+        /// Creates a GameObject with MeshFilter, MeshRenderer, and MeshCollider.
+        ///
+        /// UploadMeshData is called inside BuildMesh – before the MeshCollider is
+        /// assigned – so Unity can bake the physics data from CPU memory that is
+        /// still available at that point. Calling UploadMeshData after setting
+        /// sharedMesh discards CPU data before the bake completes and results in
+        /// a collider with no geometry (invisible to raycasts).
         /// </summary>
         private GameObject BuildGameObject(RoadSegment seg, RoadMeshData data)
         {
-            GameObject go = new ($"Road_{seg.Id}");
+            GameObject go = new($"Road_{seg.Id}");
             go.transform.position = new Vector3(0f, roadElevation, 0f);
 
             int roadLayer = LayerMask.NameToLayer("Road");
             if (roadLayer != -1)
                 go.layer = roadLayer;
 
+            // BuildMesh calls UploadMeshData internally before returning,
+            // so the MeshCollider below receives a fully baked mesh.
             Mesh mesh = BuildMesh(data);
 
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -137,19 +136,19 @@ namespace CityBuilder.Rendering.Roads
             MeshRenderer mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterials = BuildMaterialArray(data.Triangles.Length);
 
-            mesh.UploadMeshData(markNoLongerReadable: true);
-
             return go;
         }
 
         /// <summary>
         /// Populates a Unity Mesh from the plain vertex arrays produced by RoadMeshBuilder.
+        /// UploadMeshData is called here so CPU-side data is still present when the
+        /// MeshCollider assigned in BuildGameObject bakes its physics geometry.
         /// </summary>
         private static Mesh BuildMesh(RoadMeshData data)
         {
-            Mesh mesh         = new ();
-            mesh.name         = "RoadMesh";
-            mesh.indexFormat  = UnityEngine.Rendering.IndexFormat.UInt32;  // Supports > 65k vertices
+            Mesh mesh        = new();
+            mesh.name        = "RoadMesh";
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             mesh.SetVertices(data.Vertices);
             mesh.SetNormals(data.Normals);
             mesh.SetUVs(0, data.UVs);
@@ -159,13 +158,10 @@ namespace CityBuilder.Rendering.Roads
                 mesh.SetTriangles(data.Triangles[i], i);
 
             mesh.RecalculateBounds();
+            mesh.UploadMeshData(markNoLongerReadable: true);
             return mesh;
         }
 
-        /// <summary>
-        /// Returns a material array matching the number of submeshes.
-        /// Slots beyond roadMaterials.Length fall back to the last assigned material.
-        /// </summary>
         private Material[] BuildMaterialArray(int submeshCount)
         {
             Material[] mats = new Material[submeshCount];
