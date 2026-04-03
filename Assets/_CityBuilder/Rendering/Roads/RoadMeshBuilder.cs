@@ -31,7 +31,7 @@ namespace CityBuilder.Rendering.Roads
         /// <summary>Number of cross-section samples per road segment.</summary>
         private const int SamplesPerSegment = 20;
 
-        private static readonly Vector3 Up = Vector3.up;
+        private static readonly Vector3 _up = Vector3.up;
 
         // ─────────────────────────────────────────────────────────
         //  Public API
@@ -51,11 +51,13 @@ namespace CityBuilder.Rendering.Roads
             float3      nodeAPos,
             float3      nodeBPos)
         {
-            if (profile.Strips.Length == 0 || segment.TotalArcLength < 0.01f)
+            if (profile.strips.Length == 0 || segment.TotalArcLength < 0.01f)
+            {
                 return null;
+            }
 
             int sampleCount = SamplesPerSegment + 1;
-            int stripCount = profile.Strips.Length;
+            int stripCount = profile.strips.Length;
             int submeshCount = profile.SubmeshCount;
             float totalWidth = profile.TotalWidth;
 
@@ -71,7 +73,9 @@ namespace CityBuilder.Rendering.Roads
             float arcSpan = arcEnd - arcStart;
 
             if (arcSpan < 0.01f)
+            {
                 return null;
+            }
 
             float3[] positions = new float3[sampleCount];
             float3[] tangents  = new float3[sampleCount];
@@ -95,7 +99,9 @@ namespace CityBuilder.Rendering.Roads
             // Collect triangle lists per submesh, then convert to arrays at the end
             List<int>[] triLists = new List<int>[submeshCount];
             for (int s = 0; s < submeshCount; s++)
+            {
                 triLists[s] = new List<int>(SamplesPerSegment * 6);
+            }
 
             // ── Fill vertices ─────────────────────────────────────────────────
             for (int sampleIdx = 0; sampleIdx < sampleCount; sampleIdx++)
@@ -106,24 +112,24 @@ namespace CityBuilder.Rendering.Roads
 
                 for (int stripIdx = 0; stripIdx < stripCount; stripIdx++)
                 {
-                    ProfileStrip strip     = profile.Strips[stripIdx];
+                    ProfileStrip strip     = profile.strips[stripIdx];
                     float        leftX     = stripLeftX[stripIdx];
-                    float        rightX    = leftX + strip.Width;
-                    float        height    = strip.HeightOffset;
+                    float        rightX    = leftX + strip.width;
+                    float        height    = strip.heightOffset;
                     Vector3      origin    = new (positions[sampleIdx].x, positions[sampleIdx].y, positions[sampleIdx].z);
 
                     int leftIdx  = SampleStripVertex(sampleIdx, stripIdx, 0, stripCount);
                     int rightIdx = SampleStripVertex(sampleIdx, stripIdx, 1, stripCount);
 
-                    vertices[leftIdx]  = origin + right * leftX  + Up * height;
-                    vertices[rightIdx] = origin + right * rightX + Up * height;
+                    vertices[leftIdx]  = origin + right * leftX  + _up * height;
+                    vertices[rightIdx] = origin + right * rightX + _up * height;
 
                     // UV: U spans the strip width (0 = left, 1 = right); V tiles along road
                     uvs[leftIdx]  = new Vector2(0f, vCoord);
                     uvs[rightIdx] = new Vector2(1f, vCoord);
 
-                    normals[leftIdx]  = Up;
-                    normals[rightIdx] = Up;
+                    normals[leftIdx]  = _up;
+                    normals[rightIdx] = _up;
                 }
             }
 
@@ -132,7 +138,7 @@ namespace CityBuilder.Rendering.Roads
             {
                 for (int stripIdx = 0; stripIdx < stripCount; stripIdx++)
                 {
-                    ProfileStrip strip = profile.Strips[stripIdx];
+                    ProfileStrip strip = profile.strips[stripIdx];
 
                     // Four corners of the road quad between sample sampleIdx and sampleIdx+1
                     int topLeft     = SampleStripVertex(sampleIdx,     stripIdx, 0, stripCount);
@@ -141,7 +147,7 @@ namespace CityBuilder.Rendering.Roads
                     int bottomRight = SampleStripVertex(sampleIdx + 1, stripIdx, 1, stripCount);
 
                     // Two CCW triangles (normal faces upward)
-                    List<int> tris = triLists[strip.MaterialIndex];
+                    List<int> tris = triLists[strip.materialIndex];
                     tris.Add(topLeft);
                     tris.Add(bottomLeft);
                     tris.Add(topRight);
@@ -155,7 +161,9 @@ namespace CityBuilder.Rendering.Roads
             // ── Convert triangle lists to arrays ──────────────────────────────
             int[][] triangles = new int[submeshCount][];
             for (int s = 0; s < submeshCount; s++)
+            {
                 triangles[s] = triLists[s].ToArray();
+            }
 
             return new RoadMeshData(vertices, normals, uvs, triangles);
         }
@@ -177,13 +185,13 @@ namespace CityBuilder.Rendering.Roads
         /// </summary>
         private static float[] ComputeStripLeftOffsets(RoadProfile profile, float totalWidth)
         {
-            float[] offsets = new float[profile.Strips.Length];
+            float[] offsets = new float[profile.strips.Length];
             float   cursor  = -totalWidth * 0.5f;
 
-            for (int i = 0; i < profile.Strips.Length; i++)
+            for (int i = 0; i < profile.strips.Length; i++)
             {
                 offsets[i] = cursor;
-                cursor    += profile.Strips[i].Width;
+                cursor    += profile.strips[i].width;
             }
 
             return offsets;
@@ -198,7 +206,7 @@ namespace CityBuilder.Rendering.Roads
         private static Vector3 ComputeRightVector(float3 tangent)
         {
             // cross(tangent, up) = (tangent.z, 0, -tangent.x) – points right of travel
-            float3 right = math.cross(tangent, new float3(0f, 1f, 0f));
+            float3 right = math.cross(tangent, _up);
             float  len   = math.length(right);
             return len > 0.0001f
                 ? new Vector3(right.x / len, right.y / len, right.z / len)

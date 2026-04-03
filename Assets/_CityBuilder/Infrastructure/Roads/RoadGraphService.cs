@@ -144,6 +144,44 @@ namespace CityBuilder.Infrastructure.Roads
         }
 
         // ─────────────────────────────────────────────────────────
+        //  Node relocation
+        // ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Moves an existing node to a new world position.
+        ///
+        /// Publishes a RoadDemolishedEvent / RoadBuiltEvent pair for every segment
+        /// that touches the node so the renderer, intersection builder, and any
+        /// other listener automatically react without needing to know about node moves.
+        ///
+        /// Returns false when nodeId does not exist.
+        /// </summary>
+        public bool MoveNode(int nodeId, float3 newPosition, float gameTime)
+        {
+            if (!Graph.Nodes.TryGetValue(nodeId, out RoadNode node))
+                return false;
+
+            int[] affectedSegIds = node.SegmentIds.ToArray();
+
+            foreach (int segId in affectedSegIds)
+            {
+                if (Graph.Segments.TryGetValue(segId, out RoadSegment seg))
+                    _eventBus.Publish(new RoadDemolishedEvent(segId, seg.NodeA, seg.NodeB, gameTime));
+            }
+
+            Graph.MoveNode(nodeId, newPosition);
+            Graph.MarkDirty(nodeId);
+
+            foreach (int segId in affectedSegIds)
+            {
+                if (Graph.Segments.TryGetValue(segId, out RoadSegment seg))
+                    _eventBus.Publish(new RoadBuiltEvent(segId, seg.NodeA, seg.NodeB, gameTime));
+            }
+
+            return true;
+        }
+
+        // ─────────────────────────────────────────────────────────
         //  Node resolution
         // ─────────────────────────────────────────────────────────
 

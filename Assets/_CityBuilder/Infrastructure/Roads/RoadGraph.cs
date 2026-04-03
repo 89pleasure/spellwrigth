@@ -226,6 +226,54 @@ namespace CityBuilder.Infrastructure.Roads
         }
 
         // ─────────────────────────────────────────────────────────
+        //  Node relocation
+        // ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Moves a node to a new world position and keeps the graph consistent:
+        ///
+        ///   • The control point that sits at the moved end of each connected segment
+        ///     is translated by the same delta so the road tangent is preserved.
+        ///   • Arc-length LUTs are rebuilt for all affected segments.
+        ///   • Ordered segment lists are rebuilt for the moved node and all direct
+        ///     neighbours, because moving nodeId changes the departure angles as
+        ///     seen from those neighbours too.
+        ///
+        /// Returns false when nodeId does not exist.
+        /// </summary>
+        public bool MoveNode(int nodeId, float3 newPosition)
+        {
+            if (!_nodes.TryGetValue(nodeId, out RoadNode? node))
+                return false;
+
+            float3 delta    = newPosition - node.Position;
+            node.Position   = newPosition;
+
+            foreach (int segId in node.SegmentIds)
+            {
+                if (!_segments.TryGetValue(segId, out RoadSegment? seg))
+                    continue;
+
+                if (seg.NodeA == nodeId)
+                    seg.ControlPointA += delta;
+                else
+                    seg.ControlPointB += delta;
+
+                seg.RebuildArcLengthLUT(_nodes[seg.NodeA].Position, _nodes[seg.NodeB].Position);
+            }
+
+            RebuildOrderedSegments(nodeId);
+
+            foreach (int segId in node.SegmentIds)
+            {
+                if (_segments.TryGetValue(segId, out RoadSegment? seg))
+                    RebuildOrderedSegments(seg.OtherNode(nodeId));
+            }
+
+            return true;
+        }
+
+        // ─────────────────────────────────────────────────────────
         //  Dirty flags (pathfinding system)
         // ─────────────────────────────────────────────────────────
 

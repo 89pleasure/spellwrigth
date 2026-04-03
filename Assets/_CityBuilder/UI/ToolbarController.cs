@@ -13,8 +13,9 @@ namespace CityBuilder.UI
     public class ToolbarController : MonoBehaviour
     {
         [SerializeField] private RoadPlacementTool roadTool;
-        [SerializeField] private BulldozerTool bulldozerTool;
-        [SerializeField] private StyleSheet toolbarStyles;
+        [SerializeField] private BulldozerTool     bulldozerTool;
+        [SerializeField] private RoadNodeMoveTool  nodeMoveTool;
+        [SerializeField] private StyleSheet        toolbarStyles;
 
         private Button _btnRoad;
         private Button _btnBulldozer;
@@ -53,8 +54,11 @@ namespace CityBuilder.UI
             _btnRoad.clicked += OnRoadButtonClicked;
             _btnBulldozer.clicked += OnBulldozerButtonClicked;
 
-            roadTool.OnActiveChanged += OnRoadToolActiveChanged;
+            roadTool.OnActiveChanged      += OnRoadToolActiveChanged;
             bulldozerTool.OnActiveChanged += OnBulldozerToolActiveChanged;
+
+            if (nodeMoveTool != null)
+                nodeMoveTool.OnActiveChanged += OnNodeMoveToolActiveChanged;
 
             UpdateButtonState(_btnRoad, roadTool.IsActive);
             UpdateButtonState(_btnBulldozer, bulldozerTool.IsActive);
@@ -72,6 +76,7 @@ namespace CityBuilder.UI
             if (isActive)
             {
                 bulldozerTool.SetActive(false);
+                nodeMoveTool?.SetActive(false);
             }
         }
 
@@ -81,6 +86,16 @@ namespace CityBuilder.UI
             if (isActive)
             {
                 roadTool.SetActive(false);
+                nodeMoveTool?.SetActive(false);
+            }
+        }
+
+        private void OnNodeMoveToolActiveChanged(bool isActive)
+        {
+            if (isActive)
+            {
+                roadTool.SetActive(false);
+                bulldozerTool.SetActive(false);
             }
         }
 
@@ -99,14 +114,13 @@ namespace CityBuilder.UI
         private void OnDestroy()
         {
             if (roadTool != null)
-            {
                 roadTool.OnActiveChanged -= OnRoadToolActiveChanged;
-            }
 
             if (bulldozerTool != null)
-            {
                 bulldozerTool.OnActiveChanged -= OnBulldozerToolActiveChanged;
-            }
+
+            if (nodeMoveTool != null)
+                nodeMoveTool.OnActiveChanged -= OnNodeMoveToolActiveChanged;
 
             if (_btnRoad != null)
             {

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CityBuilder.Infrastructure.Roads
 {
@@ -12,16 +13,16 @@ namespace CityBuilder.Infrastructure.Roads
     public struct ProfileStrip
     {
         [Tooltip("Width of this strip in metres.")]
-        public float Width;
+        public float width;
 
         [Tooltip("Height of this strip's surface above the road baseline (e.g. 0.15 m for a kerb).")]
-        public float HeightOffset;
+        public float heightOffset;
 
-        [Tooltip("What this strip represents – used by the mesh builder and the renderer.")]
-        public StripType Type;
+        [FormerlySerializedAs("Type")] [Tooltip("What this strip represents – used by the mesh builder and the renderer.")]
+        public StripType type;
 
         [Tooltip("Which material slot to use in the MeshRenderer. All strips sharing an index use the same material.")]
-        public int MaterialIndex;
+        public int materialIndex;
     }
 
     /// <summary>
@@ -56,14 +57,14 @@ namespace CityBuilder.Infrastructure.Roads
     public class RoadProfile : ScriptableObject
     {
         [Tooltip("Cross-section strips ordered from left edge to right edge of the road.")]
-        public ProfileStrip[] Strips = Array.Empty<ProfileStrip>();
+        public ProfileStrip[] strips = Array.Empty<ProfileStrip>();
 
         /// <summary>Total road width in metres: sum of all strip widths.</summary>
         public float TotalWidth
         {
             get
             {
-                return Strips.Sum(strip => strip.Width);
+                return strips.Sum(strip => strip.width);
             }
         }
 
@@ -72,7 +73,7 @@ namespace CityBuilder.Infrastructure.Roads
         {
             get
             {
-                int max = Strips.Select(strip => strip.MaterialIndex).Prepend(0).Max();
+                int max = strips.Select(strip => strip.materialIndex).Prepend(0).Max();
                 return max + 1;
             }
         }

@@ -12,20 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea13515137ce6c71cb2dbf881412a3bf, type: 3}
   m_Name: SimpleRoad
   m_EditorClassIdentifier: CityBuilder::CityBuilder.Infrastructure.Roads.RoadProfile
-  Strips:
-  - Width: 2
-    HeightOffset: 0
-    Type: 1
-    MaterialIndex: 0
-  - Width: 3.5
-    HeightOffset: 0
-    Type: 0
-    MaterialIndex: 0
-  - Width: 3.5
-    HeightOffset: 0
-    Type: 0
-    MaterialIndex: 0
-  - Width: 3.5
-    HeightOffset: 0
-    Type: 1
-    MaterialIndex: 0
+  strips:
+  - width: 2
+    heightOffset: 0
+    type: 1
+    materialIndex: 0
+  - width: 3
+    heightOffset: 0
+    type: 0
+    materialIndex: 0
+  - width: 3
+    heightOffset: 0
+    type: 0
+    materialIndex: 0
+  - width: 2
+    heightOffset: 0
+    type: 1
+    materialIndex: 0

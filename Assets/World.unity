@@ -151,6 +151,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CityBuilder::CityBuilder.UI.ToolbarController
   roadTool: {fileID: 1700983320}
   bulldozerTool: {fileID: 525082960}
+  nodeMoveTool: {fileID: 1102942246}
   toolbarStyles: {fileID: 7433441132597879392, guid: 39efeb0b464a4b5e2b03a81c9f949d05, type: 3}
 --- !u!114 &494290234
 MonoBehaviour:
@@ -483,6 +484,52 @@ MonoBehaviour:
   zoomSpeed: 0.15
   minHeight: 10
   maxHeight: 600
+--- !u!1 &1102942245
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1102942247}
+  - component: {fileID: 1102942246}
+  m_Layer: 0
+  m_Name: MoveTool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1102942246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1102942245}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac8d747160ef53aa29ffb482ae2e93b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CityBuilder::CityBuilder.Tools.RoadNodeMoveTool
+  previewColor: {r: 0.2, g: 0.8, b: 1, a: 1}
+  previewRadius: 1
+--- !u!4 &1102942247
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1102942245}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 27.31384, y: 0, z: -14.66425}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1494787489
 GameObject:
   m_ObjectHideFlags: 0
@@ -493,6 +540,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1494787491}
   - component: {fileID: 1494787490}
+  - component: {fileID: 1494787492}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -529,6 +577,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1494787492
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1494787489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd8c9fbdc9c3ed2785485bce5dff9ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CityBuilder::CityBuilder.Infrastructure.Roads.RoadNetworkDebugDrawer
+  nodeColor: {r: 0.2, g: 0.8, b: 0.2, a: 1}
+  dirtyNodeColor: {r: 1, g: 0.3, b: 0.1, a: 1}
+  nodeRadius: 3
+  segmentColor: {r: 0.9, g: 0.9, b: 0.2, a: 1}
+  blockedColor: {r: 1, g: 0.1, b: 0.1, a: 1}
+  curveSamples: 16
 --- !u!1 &1618836408
 GameObject:
   m_ObjectHideFlags: 0
@@ -797,7 +863,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec6effaba98220ff3bb10df8b0bb0d66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CityBuilder::CityBuilder.Infrastructure.Roads.RoadPlacementTool
-  roadWidth: 7
+  roadWidth: 10
   roadElevation: 0.05
   previewColor: {r: 1, g: 0.8, b: 0.2, a: 1}
 --- !u!4 &1700983321
@@ -894,6 +960,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CityBuilder::CityBuilder.Rendering.Roads.IntersectionRenderer
   roadProfile: {fileID: 11400000, guid: 2d4a679f1fa70d6eeaf6c6cde3186f48, type: 2}
   roadRenderer: {fileID: 1934264798}
+  intersectionMaterials: []
   roadElevation: 0.05
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
@@ -906,3 +973,4 @@ SceneRoots:
   - {fileID: 1934264799}
   - {fileID: 494290235}
   - {fileID: 525082961}
+  - {fileID: 1102942247}
