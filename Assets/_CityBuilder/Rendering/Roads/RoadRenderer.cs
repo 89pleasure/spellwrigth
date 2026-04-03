@@ -40,8 +40,12 @@ namespace CityBuilder.Rendering.Roads
 
         public MeshRegistry? Registry { get; private set; }
 
+        private int _roadLayer;
+
         private void Start()
         {
+            _roadLayer = LayerMask.NameToLayer("Road");
+
             if (roadProfile == null)
             {
                 Debug.LogWarning("RoadRenderer: no RoadProfile assigned – roads will not be visible.", this);
@@ -53,13 +57,15 @@ namespace CityBuilder.Rendering.Roads
                 Debug.LogWarning("RoadRenderer: no materials assigned – roads will appear pink.", this);
             }
 
-            Material baseMaterial = roadMaterials.Length > 0
-                ? roadMaterials[0]
-                : new Material(Shader.Find("Hidden/InternalErrorShader")!);
+            Registry = new MeshRegistry(highlightColor);
 
-            Registry = new MeshRegistry(baseMaterial, highlightColor);
+            if (GameServices.Instance == null)
+            {
+                Debug.LogWarning("RoadRenderer: GameServices not yet initialized – roads will not load.", this);
+                return;
+            }
 
-            EventBus bus = GameServices.Instance!.Bus;
+            EventBus bus = GameServices.Instance.Bus;
             bus.Subscribe<RoadBuiltEvent>(this);
             bus.Subscribe<RoadDemolishedEvent>(this);
 
@@ -133,10 +139,9 @@ namespace CityBuilder.Rendering.Roads
                 }
             };
 
-            int roadLayer = LayerMask.NameToLayer("Road");
-            if (roadLayer != -1)
+            if (_roadLayer != -1)
             {
-                go.layer = roadLayer;
+                go.layer = _roadLayer;
             }
 
             Mesh mesh = BuildMesh(data);

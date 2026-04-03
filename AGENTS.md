@@ -53,6 +53,11 @@ Wenn `Physics.Raycast` keinen MeshCollider trifft obwohl Bounds und Mesh korrekt
 2. Trifft er Terrain/andere Objekte statt den Collider → Inside-Out-Winding
 3. Fix: Winding korrigieren **oder** `Physics.queriesHitBackfaces = true` setzen
 
+### Aktueller Stand (April 2026)
+Der Code in `RoadCollisionBuilder.cs` implementiert diese Faustregel korrekt.
+Alle Winding-Orders (Top, Bottom, Left, Right, Front, Back) wurden verifiziert.
+**Bei Änderungen an diesem Code die Tabelle oben als Referenz verwenden.**
+
 ---
 
 ## LSP-Fehler in RoadCollisionBuilder.cs (False Positives)

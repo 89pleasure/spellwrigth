@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using System.Numerics;
 using CityBuilder.Core;
 using CityBuilder.Core.EventBus;
 using CityBuilder.Infrastructure.Roads;
+using CityBuilder.Rendering;
 using UnityEngine;
 using Vector3 = UnityEngine.Vector3;
 
@@ -35,6 +35,10 @@ namespace CityBuilder.Rendering.Roads
     {
         [SerializeField] private RoadProfile?  roadProfile;
         [SerializeField] private RoadRenderer? roadRenderer;
+
+        [Header("Materials")]
+        [Tooltip("Materials for intersection meshes. Should match the road materials for visual consistency.")]
+        [SerializeField] private Material[] intersectionMaterials = System.Array.Empty<Material>();
 
         [Header("Elevation")]
         [Tooltip("Lifts intersection meshes to match the road surface elevation.")]
@@ -192,17 +196,21 @@ namespace CityBuilder.Rendering.Roads
         }
 
         /// <summary>
-        /// Returns a material array for the intersection, using the road renderer's
-        /// materials where available and falling back to the default material.
+        /// Returns a material array for the intersection, using the assigned
+        /// intersection materials. Falls back to the last available material
+        /// when the submesh count exceeds the array length.
         /// </summary>
         private Material[] BuildMaterialArray(int submeshCount)
         {
-            // Borrow materials from the road renderer so intersections match visually
-            Material fallback = new (Shader.Find("Hidden/InternalErrorShader")!);
-
             Material[] mats = new Material[submeshCount];
             for (int i = 0; i < submeshCount; i++)
-                mats[i] = fallback;
+            {
+                mats[i] = i < intersectionMaterials.Length
+                    ? intersectionMaterials[i]
+                    : intersectionMaterials.Length > 0
+                        ? intersectionMaterials[^1]
+                        : RenderingUtils.DefaultErrorMaterial;
+            }
 
             return mats;
         }

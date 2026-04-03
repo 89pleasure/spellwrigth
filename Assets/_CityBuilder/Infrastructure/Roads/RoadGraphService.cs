@@ -66,6 +66,41 @@ namespace CityBuilder.Infrastructure.Roads
             float3 controlA = math.lerp(nodeA.Position, nodeB.Position, 1f / 3f);
             float3 controlB = math.lerp(nodeA.Position, nodeB.Position, 2f / 3f);
 
+            BuildRoadInternal(nodeA, nodeB, controlA, controlB, lanes, speedLimit, gameTime);
+        }
+
+        /// <summary>
+        /// Places a curved road segment with explicit inner Bézier handles.
+        ///
+        /// Use this overload when the caller has already computed the cubic control
+        /// points (e.g. converted from a quadratic guide point via the 2/3-rule).
+        /// </summary>
+        public void BuildRoad(
+            float3 from,
+            float3 to,
+            float3 controlA,
+            float3 controlB,
+            float gameTime,
+            int lanes = 2,
+            float speedLimit = 50f)
+        {
+            RoadNode nodeA = ResolveOrCreateNode(from, gameTime, lanes, speedLimit);
+            RoadNode nodeB = ResolveOrCreateNode(to, gameTime, lanes, speedLimit);
+
+            if (nodeA.Id == nodeB.Id) { return; }
+
+            BuildRoadInternal(nodeA, nodeB, controlA, controlB, lanes, speedLimit, gameTime);
+        }
+
+        private void BuildRoadInternal(
+            RoadNode nodeA,
+            RoadNode nodeB,
+            float3 controlA,
+            float3 controlB,
+            int lanes,
+            float speedLimit,
+            float gameTime)
+        {
             RoadSegment? segment = Graph.AddSegment(nodeA.Id, nodeB.Id, controlA, controlB, lanes, speedLimit);
             if (segment == null) { return; }
 
@@ -143,17 +178,19 @@ namespace CityBuilder.Infrastructure.Roads
             int oldNodeA = hit.Value.segment.NodeA;
             int oldNodeB = hit.Value.segment.NodeB;
 
-            RoadNode junctionNode = Graph.SplitSegment(oldSegmentId, hit.Value.t);
+            (RoadNode junctionNode, int newSegmentId) = Graph.SplitSegment(oldSegmentId, hit.Value.t);
 
-            // Notify listeners: the original segment is replaced by two halves
+            // Notify listeners: the original segment (old shape) is gone,
+            // replaced by two halves with correct node IDs.
             _eventBus.Publish(new RoadDemolishedEvent(oldSegmentId, oldNodeA, oldNodeB, gameTime));
-            foreach (int segId in junctionNode.SegmentIds)
-            {
-                if (Graph.Segments.TryGetValue(segId, out RoadSegment half))
-                {
-                    _eventBus.Publish(new RoadBuiltEvent(half.Id, half.NodeA, half.NodeB, gameTime));
-                }
-            }
+
+            // First half: the shortened original segment (same ID, new shape)
+            if (Graph.Segments.TryGetValue(oldSegmentId, out RoadSegment firstHalf))
+                _eventBus.Publish(new RoadBuiltEvent(firstHalf.Id, firstHalf.NodeA, firstHalf.NodeB, gameTime));
+
+            // Second half: the newly created segment
+            if (Graph.Segments.TryGetValue(newSegmentId, out RoadSegment secondHalf))
+                _eventBus.Publish(new RoadBuiltEvent(secondHalf.Id, secondHalf.NodeA, secondHalf.NodeB, gameTime));
 
             Graph.MarkDirty(junctionNode.Id);
             return junctionNode;

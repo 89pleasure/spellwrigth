@@ -63,9 +63,11 @@ namespace CityBuilder.Rendering.Roads
             float[] stripLeftX = ComputeStripLeftOffsets(profile, totalWidth);
 
             // ── Sample the curve ─────────────────────────────────────────────
-            // Evenly spaced in real-world arc-length within the visible range
-            float arcStart = segment.TrimmedStartT * segment.TotalArcLength;
-            float arcEnd  = segment.TrimmedEndT * segment.TotalArcLength;
+            // Evenly spaced in real-world arc-length within the visible range.
+            // TrimmedStartT/EndT are Bézier t-parameters, not normalised distances,
+            // so we must convert them via the arc-length LUT.
+            float arcStart = BezierCurve.TToArcLength(segment.ArcLengthLUT, segment.TrimmedStartT);
+            float arcEnd   = BezierCurve.TToArcLength(segment.ArcLengthLUT, segment.TrimmedEndT);
             float arcSpan = arcEnd - arcStart;
 
             if (arcSpan < 0.01f)

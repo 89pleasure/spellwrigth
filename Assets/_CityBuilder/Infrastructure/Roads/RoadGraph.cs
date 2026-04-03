@@ -128,9 +128,10 @@ namespace CityBuilder.Infrastructure.Roads
         /// Called when the player starts or ends a new road on top of an existing
         /// segment rather than snapping to a node – creating a T-junction.
         ///
-        /// Returns the newly created junction node.
+        /// Returns the newly created junction node and the ID of the new second-half segment.
+        /// The original segment (segmentId) is shortened in-place to cover the first half.
         /// </summary>
-        public RoadNode SplitSegment(int segmentId, float t)
+        public (RoadNode splitNode, int newSegmentId) SplitSegment(int segmentId, float t)
         {
             RoadSegment seg   = _segments[segmentId];
             RoadNode    nodeA = _nodes[seg.NodeA];
@@ -178,7 +179,7 @@ namespace CityBuilder.Infrastructure.Roads
             RebuildOrderedSegments(splitNode.Id);
             RebuildOrderedSegments(oldNodeBId);
 
-            return splitNode;
+            return (splitNode, secondHalf.Id);
         }
 
         // ─────────────────────────────────────────────────────────

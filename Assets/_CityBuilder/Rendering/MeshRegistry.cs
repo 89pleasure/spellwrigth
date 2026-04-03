@@ -17,13 +17,15 @@ namespace CityBuilder.Rendering
         // Reverse lookup: GameObject reference → segment ID, for direct raycast hit identification
         private readonly Dictionary<GameObject, int> _goToId = new();
 
-        private readonly Material _sharedMaterial;
         private readonly Color _highlightColor;
         private int _highlightedId = -1;
 
-        public MeshRegistry(Material sharedMaterial, Color highlightColor)
+        // Saved state for the currently highlighted object so we can restore exactly.
+        private Material[]? _savedMaterials;
+        private Material[]? _highlightInstances;
+
+        public MeshRegistry(Color highlightColor)
         {
-            _sharedMaterial = sharedMaterial;
             _highlightColor = highlightColor;
         }
 
@@ -37,6 +39,7 @@ namespace CityBuilder.Rendering
         {
             if (_highlightedId == id)
             {
+                DestroyHighlightInstances();
                 _highlightedId = -1;
             }
 
@@ -73,12 +76,23 @@ namespace CityBuilder.Rendering
             }
 
             MeshRenderer mr = highlightGo.GetComponent<MeshRenderer>();
-            Material instance = mr.material;
-            instance.color = _highlightColor;
+
+            // Save the original shared materials so we can restore them exactly
+            _savedMaterials = mr.sharedMaterials;
+
+            // Create tinted instances for each material slot
+            _highlightInstances = new Material[_savedMaterials.Length];
+            for (int i = 0; i < _savedMaterials.Length; i++)
+            {
+                _highlightInstances[i] = new Material(_savedMaterials[i]);
+                _highlightInstances[i].color = _highlightColor;
+            }
+
+            mr.sharedMaterials = _highlightInstances;
             _highlightedId = id;
         }
 
-        /// <summary>Restores the highlighted entry to the shared material.</summary>
+        /// <summary>Restores the highlighted entry to its original materials.</summary>
         public void ClearHighlight()
         {
             if (_highlightedId == -1)
@@ -86,11 +100,12 @@ namespace CityBuilder.Rendering
                 return;
             }
 
-            if (_objects.TryGetValue(_highlightedId, out GameObject prevGo))
+            if (_objects.TryGetValue(_highlightedId, out GameObject prevGo) && _savedMaterials != null)
             {
-                prevGo.GetComponent<MeshRenderer>().sharedMaterial = _sharedMaterial;
+                prevGo.GetComponent<MeshRenderer>().sharedMaterials = _savedMaterials;
             }
 
+            DestroyHighlightInstances();
             _highlightedId = -1;
         }
 
@@ -100,6 +115,9 @@ namespace CityBuilder.Rendering
         /// <summary>Destroys all registered objects and clears the registry.</summary>
         public void Clear()
         {
+            DestroyHighlightInstances();
+            _highlightedId = -1;
+
             foreach (GameObject go in _objects.Values.OfType<GameObject>())
             {
                 Object.Destroy(go);
@@ -107,7 +125,20 @@ namespace CityBuilder.Rendering
 
             _objects.Clear();
             _goToId.Clear();
-            _highlightedId = -1;
+        }
+
+        private void DestroyHighlightInstances()
+        {
+            if (_highlightInstances == null) return;
+
+            foreach (Material mat in _highlightInstances)
+            {
+                if (mat != null)
+                    Object.Destroy(mat);
+            }
+
+            _highlightInstances = null;
+            _savedMaterials = null;
         }
     }
 }

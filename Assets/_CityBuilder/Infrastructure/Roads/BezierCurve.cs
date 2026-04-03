@@ -48,7 +48,10 @@ namespace CityBuilder.Infrastructure.Roads
         /// Perpendicular to this is the road's right vector, used to orient
         /// the cross-section profile during mesh extrusion.
         ///
-        /// Returns (0, 0, 1) when the tangent is zero-length (degenerate curve).
+        /// Returns (0, 0, 1) when the tangent is zero-length (degenerate curve,
+        /// e.g. start and end node at the same position). This fallback points
+        /// along +Z, which may cause visual artifacts on vertical roads – ensure
+        /// roads have non-zero length before calling this method.
         /// </summary>
         public static float3 EvaluateTangent(float3 p0, float3 p1, float3 p2, float3 p3, float t)
         {
@@ -123,6 +126,28 @@ namespace CityBuilder.Infrastructure.Roads
             }
 
             return lut;
+        }
+
+        /// <summary>
+        /// Converts a curve parameter t to the real-world arc-length distance (metres)
+        /// by interpolating the LUT. Inverse of ArcLengthToT.
+        ///
+        /// Example use: computing how many metres along the road a trim point sits
+        /// so the mesh builder can sample the visible range in uniform arc-length steps.
+        /// </summary>
+        public static float TToArcLength(float[] lut, float t)
+        {
+            if (t <= 0f) return 0f;
+            float totalLength = lut[lut.Length - 1];
+            if (t >= 1f) return totalLength;
+
+            float fIndex = t * (lut.Length - 1);
+            int   lo     = (int)fIndex;
+            int   hi     = lo + 1;
+            if (hi >= lut.Length) return totalLength;
+
+            float fraction = fIndex - lo;
+            return math.lerp(lut[lo], lut[hi], fraction);
         }
 
         /// <summary>

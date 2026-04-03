@@ -39,8 +39,10 @@ namespace CityBuilder.Rendering.Roads
             float3 nodeBPos,
             float thickness = 0.5f)
         {
-            float arcStart = segment.TrimmedStartT * segment.TotalArcLength;
-            float arcEnd   = segment.TrimmedEndT   * segment.TotalArcLength;
+            // TrimmedStartT/EndT are Bézier t-parameters, not normalised distances,
+            // so we must convert them via the arc-length LUT.
+            float arcStart = BezierCurve.TToArcLength(segment.ArcLengthLUT, segment.TrimmedStartT);
+            float arcEnd   = BezierCurve.TToArcLength(segment.ArcLengthLUT, segment.TrimmedEndT);
             float arcSpan  = arcEnd - arcStart;
 
             if (arcSpan < 0.01f || profile.TotalWidth < 0.01f)
