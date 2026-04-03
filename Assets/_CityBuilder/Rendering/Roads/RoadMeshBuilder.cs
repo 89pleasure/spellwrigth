@@ -54,10 +54,10 @@ namespace CityBuilder.Rendering.Roads
             if (profile.Strips.Length == 0 || segment.TotalArcLength < 0.01f)
                 return null;
 
-            int     sampleCount  = SamplesPerSegment + 1;
-            int     stripCount   = profile.Strips.Length;
-            int     submeshCount = profile.SubmeshCount;
-            float   totalWidth   = profile.TotalWidth;
+            int sampleCount = SamplesPerSegment + 1;
+            int stripCount = profile.Strips.Length;
+            int submeshCount = profile.SubmeshCount;
+            float totalWidth = profile.TotalWidth;
 
             // Precompute strip left-edge X offsets measured from the road centre
             float[] stripLeftX = ComputeStripLeftOffsets(profile, totalWidth);

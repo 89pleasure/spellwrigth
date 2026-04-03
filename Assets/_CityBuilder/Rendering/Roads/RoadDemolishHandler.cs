@@ -49,16 +49,14 @@ namespace CityBuilder.Rendering.Roads
             Ray ray = _camera.ScreenPointToRay(ms.position.value);
             int roadMask = LayerMask.GetMask("Road");
 
-            if (Physics.Raycast(ray, out RaycastHit roadHit, 1000f, roadMask))
-            {
-                Debug.Log($"[RoadOnly] Hit {roadHit.collider.gameObject.name}");
-            }
-            else
-            {
-                Debug.Log("[RoadOnly] Miss");
-            }
+            // ── DEBUG ─────────────────────────────────────────────────────────
+            // Press D to fire a one-shot diagnostic that checks layer setup,
+            // unmasked hits, and MeshCollider state for all road objects.
+            if (Keyboard.current != null && Keyboard.current.dKey.wasPressedThisFrame)
+                LogRaycastDiagnostics(ray, roadMask);
+            // ─────────────────────────────────────────────────────────────────
 
-            if (Physics.Raycast(ray, out RaycastHit hit))
+            if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue, roadMask))
             {
                 if (roadRenderer.Registry.TryGetId(hit.collider.gameObject, out int segId))
                 {
@@ -66,7 +64,6 @@ namespace CityBuilder.Rendering.Roads
                 }
                 else
                 {
-                    // Hit something, but it's not a road – log once per new object
                     Debug.Log($"[RoadDemolishHandler] Hover hit '{hit.collider.gameObject.name}' – not in Registry.");
                     roadRenderer.Registry.ClearHighlight();
                 }
@@ -74,6 +71,28 @@ namespace CityBuilder.Rendering.Roads
             else
             {
                 roadRenderer.Registry.ClearHighlight();
+            }
+        }
+
+        /// <summary>
+        /// One-shot diagnostic: call once while hovering over a road to identify
+        /// why Physics.Raycast is not hitting. Press D in Play mode.
+        /// </summary>
+        private void LogRaycastDiagnostics(Ray ray, int roadMask)
+        {
+            Debug.Log($"[RoadDebug] roadMask value = {roadMask} " +
+                      $"(0 means the 'Road' layer does not exist in Project Settings → Tags & Layers)");
+
+            // Try unmasked raycast to see what's actually under the cursor
+            if (Physics.Raycast(ray, out RaycastHit anyHit, float.MaxValue))
+            {
+                GameObject go = anyHit.collider.gameObject;
+                Debug.Log($"[RoadDebug] Unmasked hit: '{go.name}'  layer={go.layer} ({LayerMask.LayerToName(go.layer)})  " +
+                          $"collider={anyHit.collider.GetType().Name}  point={anyHit.point}");
+            }
+            else
+            {
+                Debug.Log("[RoadDebug] Unmasked raycast hit NOTHING – check camera direction and collider presence.");
             }
         }
 

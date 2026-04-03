@@ -109,18 +109,21 @@ namespace CityBuilder.Rendering.Roads
             if (data == null)
                 return;
 
-            GameObject go = BuildGameObject(seg, data);
+            Mesh? colliderMesh = RoadCollisionBuilder.Build(seg, roadProfile, nodeA.Position, nodeB.Position);
+
+            GameObject go = BuildGameObject(seg, data, colliderMesh);
             Registry.Register(seg.Id, go);
         }
 
         /// <summary>
         /// Creates a GameObject with MeshFilter, MeshRenderer, and MeshCollider.
         ///
-        /// The MeshCollider is assigned before UploadMeshData so that Unity bakes
-        /// physics geometry from CPU-resident data. UploadMeshData is called
-        /// afterwards to push the mesh to the GPU for rendering.
+        /// The visual mesh is uploaded to the GPU via UploadMeshData after the collider
+        /// is assigned. The collider uses a separate volumetric mesh so that
+        /// Physics.Raycast() works reliably – the visual mesh is a flat, one-sided
+        /// surface which PhysX cannot hit consistently.
         /// </summary>
-        private GameObject BuildGameObject(RoadSegment seg, RoadMeshData data)
+        private GameObject BuildGameObject(RoadSegment seg, RoadMeshData data, Mesh? colliderMesh)
         {
             GameObject go = new($"Road_{seg.Id}")
             {
@@ -139,12 +142,10 @@ namespace CityBuilder.Rendering.Roads
             Mesh mesh = BuildMesh(data);
 
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            Mesh meshForCollider = colliderMesh != null ? colliderMesh : mesh;
+            go.AddComponent<MeshCollider>().sharedMesh = meshForCollider;
 
-            // Assign collider while mesh data is still CPU-resident so PhysX can
-            // bake collision geometry synchronously.
-            go.AddComponent<MeshCollider>().sharedMesh = mesh;
-
-            // Upload to GPU for rendering after the collider bake is complete.
+            // Upload visual mesh to GPU for rendering.
             mesh.UploadMeshData(markNoLongerReadable: false);
 
             MeshRenderer mr = go.AddComponent<MeshRenderer>();

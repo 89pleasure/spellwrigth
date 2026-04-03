@@ -14,8 +14,8 @@ namespace CityBuilder.Rendering
     {
         private readonly Dictionary<int, GameObject> _objects = new();
 
-        // Reverse lookup: Unity entity ID → entity ID, for direct raycast hit identification
-        private readonly Dictionary<EntityId, int> _instanceToId = new();
+        // Reverse lookup: GameObject reference → segment ID, for direct raycast hit identification
+        private readonly Dictionary<GameObject, int> _goToId = new();
 
         private readonly Material _sharedMaterial;
         private readonly Color _highlightColor;
@@ -30,7 +30,7 @@ namespace CityBuilder.Rendering
         public void Register(int id, GameObject go)
         {
             _objects[id] = go;
-            _instanceToId[go.GetEntityId()] = id;
+            _goToId[go] = id;
         }
 
         public void Unregister(int id)
@@ -45,7 +45,7 @@ namespace CityBuilder.Rendering
                 return;
             }
 
-            _instanceToId.Remove(go.GetEntityId());
+            _goToId.Remove(go);
             Object.Destroy(go);
             _objects.Remove(id);
         }
@@ -55,7 +55,7 @@ namespace CityBuilder.Rendering
         /// Returns false if the object is not managed by this registry.
         /// </summary>
         public bool TryGetId(GameObject go, out int entityId) =>
-            _instanceToId.TryGetValue(go.GetEntityId(), out entityId);
+            _goToId.TryGetValue(go, out entityId);
 
         /// <summary>Highlights the given ID; clears any previously highlighted entry.</summary>
         public void SetHighlight(int id)
@@ -72,8 +72,9 @@ namespace CityBuilder.Rendering
                 return;
             }
 
-            // .material creates a per-instance copy, leaving all others unaffected
-            highlightGo.GetComponent<MeshRenderer>().material.SetColor("_BaseColor", _highlightColor);
+            MeshRenderer mr = highlightGo.GetComponent<MeshRenderer>();
+            Material instance = mr.material;
+            instance.color = _highlightColor;
             _highlightedId = id;
         }
 
@@ -93,6 +94,9 @@ namespace CityBuilder.Rendering
             _highlightedId = -1;
         }
 
+        /// <summary>Returns all GameObjects currently managed by this registry.</summary>
+        public IEnumerable<GameObject> AllGameObjects() => _objects.Values;
+
         /// <summary>Destroys all registered objects and clears the registry.</summary>
         public void Clear()
         {
@@ -102,7 +106,7 @@ namespace CityBuilder.Rendering
             }
 
             _objects.Clear();
-            _instanceToId.Clear();
+            _goToId.Clear();
             _highlightedId = -1;
         }
     }
